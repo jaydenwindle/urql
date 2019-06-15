@@ -55,33 +55,41 @@ const createFetchSource = (operation: Operation) => {
 
     const { context } = operation;
 
-    const extraOptions =
-      typeof context.fetchOptions === 'function'
-        ? context.fetchOptions()
-        : context.fetchOptions || {};
+    const executeAsync = async () => {
+      let extraOptions =
+        typeof context.fetchOptions === 'function'
+          ? context.fetchOptions()
+          : context.fetchOptions || {};
 
-    const fetchOptions = {
-      body: JSON.stringify({
-        query: print(operation.query),
-        variables: operation.variables,
-      }),
-      method: 'POST',
-      ...extraOptions,
-      headers: {
-        'content-type': 'application/json',
-        ...extraOptions.headers,
-      },
-      signal:
-        abortController !== undefined ? abortController.signal : undefined,
-    };
-
-    executeFetch(operation, fetchOptions).then(result => {
-      if (result !== undefined) {
-        next(result);
+      if (Promise.resolve(extraOptions) == extraOptions) {
+        extraOptions = await extraOptions;
       }
 
-      complete();
-    });
+      const fetchOptions = {
+        body: JSON.stringify({
+          query: print(operation.query),
+          variables: operation.variables,
+        }),
+        method: 'POST',
+        ...extraOptions,
+        headers: {
+          'content-type': 'application/json',
+          ...extraOptions.headers,
+        },
+        signal:
+          abortController !== undefined ? abortController.signal : undefined,
+      };
+
+      executeFetch(operation, fetchOptions).then(result => {
+        if (result !== undefined) {
+          next(result);
+        }
+
+        complete();
+      });
+    };
+
+    executeAsync();
 
     return () => {
       if (abortController !== undefined) {
