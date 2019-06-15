@@ -26,10 +26,14 @@ export interface GraphQLRequest {
   variables?: object;
 }
 
+interface RequestInitOrPromise extends RequestInit {
+  then?: any;
+}
+
 /** Additional metadata passed to [exchange]{@link Exchange} functions. */
 export interface OperationContext {
   [key: string]: any;
-  fetchOptions?: RequestInit | (() => RequestInit);
+  fetchOptions?: RequestInitOrPromise | (() => RequestInitOrPromise);
   requestPolicy: RequestPolicy;
   url: string;
 }

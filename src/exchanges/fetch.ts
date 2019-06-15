@@ -55,16 +55,37 @@ const createFetchSource = (operation: Operation) => {
 
     const { context } = operation;
 
-    const executeAsync = async () => {
-      let extraOptions =
-        typeof context.fetchOptions === 'function'
-          ? context.fetchOptions()
-          : context.fetchOptions || {};
+    const extraOptions =
+      typeof context.fetchOptions === 'function'
+        ? context.fetchOptions()
+        : context.fetchOptions || {};
 
-      if (Promise.resolve(extraOptions) == extraOptions) {
-        extraOptions = await extraOptions;
-      }
+    if (extraOptions.then && typeof extraOptions.then == 'function') {
+      extraOptions.then(extraOptions => {
+        const fetchOptions = {
+          body: JSON.stringify({
+            query: print(operation.query),
+            variables: operation.variables,
+          }),
+          method: 'POST',
+          ...extraOptions,
+          headers: {
+            'content-type': 'application/json',
+            ...extraOptions.headers,
+          },
+          signal:
+            abortController !== undefined ? abortController.signal : undefined,
+        };
 
+        executeFetch(operation, fetchOptions).then(result => {
+          if (result !== undefined) {
+            next(result);
+          }
+
+          complete();
+        });
+      });
+    } else {
       const fetchOptions = {
         body: JSON.stringify({
           query: print(operation.query),
@@ -87,9 +108,7 @@ const createFetchSource = (operation: Operation) => {
 
         complete();
       });
-    };
-
-    executeAsync();
+    }
 
     return () => {
       if (abortController !== undefined) {
