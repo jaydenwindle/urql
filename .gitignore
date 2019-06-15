@@ -8,7 +8,6 @@ yarn-error.log*
 package-lock.json
 package-lock.json.*
 bundles
-dist
 webpack-build
 .rts2_cache*
 cypress/screenshots
